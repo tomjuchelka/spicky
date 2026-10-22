@@ -2,7 +2,11 @@
 
 2D automatizační hra: postav plně automatickou cukrárnu, která sama vyrábí koňakové špičky, větrníky a rakvičky. Jeden HTML soubor, čistý JavaScript a canvas, bez závislostí.
 
-## Spuštění
+## Hrát online
+
+**https://tomjuchelka.github.io/spicky/** (GitHub Pages, nasazuje se automaticky z větve `main`)
+
+## Spuštění lokálně
 
 ```
 python3 -m http.server 8004
