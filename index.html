@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Koňakové špičky</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#000;color:#f3e9d8;font-family:system-ui,"Segoe UI",Arial,sans-serif;overflow:hidden;user-select:none}
+#game{position:fixed;inset:0;background:#2b2219}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+[hidden]{display:none !important}
+.ov{position:absolute}
+#top{left:8px;top:8px;background:rgba(40,28,18,.82);padding:7px 11px;border-radius:7px;font-size:13px;line-height:1.6;pointer-events:none;min-width:250px;border:1px solid #6a5240}
+#top b{color:#ffcf6a}
+#top .bar{margin-top:3px}
+#rec{left:8px;top:140px;background:rgba(40,28,18,.82);padding:7px 10px;border-radius:7px;font-size:12px;line-height:1.5;border:1px solid #6a5240;max-width:320px}
+#rec .tabs{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap}
+#rec .tab{border:1px solid #6a5240;border-radius:4px;padding:1px 7px;cursor:pointer;background:#3a2c20;color:#d9b98a;font-size:11px}
+#rec .tab.sel{background:#6a4a2a;color:#ffcf6a;border-color:#ffcf6a}
+#rec .tab.lk{opacity:.4;cursor:default}
+#rec .tab:hover:not(.lk){border-color:#e0b070}
+#rec h4{font-size:11px;color:#d9b98a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+#rec .r{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin:2px 0}
+#rec img{width:18px;height:18px;vertical-align:middle}
+#rec .m{color:#ffcf6a;font-weight:bold}
+#rec .lk{opacity:.4}
+#rec .a{color:#d9b98a;padding:0 2px}
+#hotbar{left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:4px;background:rgba(40,28,18,.86);padding:5px;border-radius:9px;border:1px solid #6a5240}
+.slot{width:46px;height:46px;border:2px solid #6a5240;border-radius:6px;background:#3a2c20;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.slot img{width:36px;height:36px;image-rendering:auto}
+.slot .c{position:absolute;right:2px;bottom:0;font-size:11px;font-weight:bold;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.slot .k{position:absolute;left:3px;top:1px;font-size:9px;color:#d9b98a}
+.slot.sel{border-color:#ffcf6a;box-shadow:0 0 8px #ffcf6a}
+.slot.dis{opacity:.35;cursor:default}
+.slot.ok{border-color:#6ab04c}
+.slot:hover{border-color:#e0b070}
+#tip{pointer-events:none;background:rgba(40,28,18,.95);border:1px solid #6a5240;padding:6px 9px;border-radius:5px;font-size:12px;line-height:1.45;max-width:290px;white-space:pre-line;z-index:20}
+.win{background:rgba(48,34,22,.97);border:1px solid #6a5240;border-radius:9px;padding:13px;box-shadow:0 8px 30px rgba(0,0,0,.6);font-size:13px}
+.win h2{font-size:16px;margin-bottom:8px;color:#ffcf6a;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.win h3{font-size:11px;margin:10px 0 4px;color:#d9b98a;text-transform:uppercase;letter-spacing:.5px}
+.x{cursor:pointer;color:#c9b090;font-weight:bold;padding:0 6px}
+.x:hover{color:#fff}
+.grid{display:grid;grid-template-columns:repeat(6,46px);gap:4px}
+#entpanel{left:50%;top:50%;transform:translate(-50%,-50%);min-width:360px;max-width:480px;z-index:10}
+#zak{left:50%;top:50%;transform:translate(-50%,-50%);width:620px;max-height:88%;overflow:auto;z-index:10}
+.row{display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:wrap}
+.bar{height:10px;background:#1a120c;border:1px solid #6a5240;border-radius:4px;overflow:hidden;flex:1;min-width:80px}
+.bar i{display:block;height:100%;background:#6ab04c}
+.bar i.y{background:#ffcf6a}
+button{background:#5a4332;color:#f3e9d8;border:1px solid #8a6a50;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:13px}
+button:hover{background:#6e5440}
+button:disabled{opacity:.4;cursor:default}
+button.p{background:#b7791f;border-color:#d99a3a}
+button.p:hover{background:#d08a28}
+.card{border:1px solid #6a5240;border-radius:6px;padding:8px 10px;margin:6px 0;display:flex;gap:12px;align-items:center}
+.card.done{border-color:#6ab04c}
+.card.lock{opacity:.5}
+.card.cur{border-color:#ffcf6a;background:rgba(255,200,100,.08)}
+.card .t{flex:1}
+.card .t small{color:#d9b98a;display:block;margin-top:2px}
+.card .ic img{width:30px;height:30px}
+.warn{color:#ff8a6a;margin-top:6px}
+#menu{inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,#6b4a30,#1a120c 75%);z-index:30}
+#menu .win{width:580px;text-align:center}
+#menu h1{color:#ffcf6a;font-size:38px;letter-spacing:2px;margin-bottom:4px;text-shadow:0 2px 0 #7a4a00}
+#menu p{color:#e0cdb0;line-height:1.6;margin:10px 0;font-size:13px;text-align:left}
+#menu button{margin:6px;padding:10px 22px;font-size:16px}
+#fs{right:10px;bottom:10px;font-size:18px;padding:4px 10px;z-index:5}
+#msg{left:50%;top:70px;transform:translateX(-50%);color:#fff;font-size:17px;text-shadow:0 0 5px #000,0 0 5px #000;pointer-events:none;transition:opacity .6s;opacity:0;z-index:6;text-align:center}
+.kbd{display:inline-block;border:1px solid #8a6a50;border-radius:3px;padding:0 5px;font-size:11px;background:#1a120c;margin:0 2px;color:#fff}
+.sub{color:#d9b98a;font-size:12px;line-height:1.5}
+.chain{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;margin:4px 0}
+.chain img{width:20px;height:20px;vertical-align:-5px}
+.chain span{background:#3a2c20;border:1px solid #6a5240;border-radius:4px;padding:2px 6px}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="cv"></canvas>
+  <div id="top" class="ov"></div>
+  <div id="rec" class="ov"></div>
+  <div id="msg" class="ov"></div>
+  <div id="hotbar" class="ov"></div>
+  <div id="tip" class="ov" hidden></div>
+  <div id="entpanel" class="ov win" hidden></div>
+  <div id="zak" class="ov win" hidden></div>
+  <button id="fs" class="ov" title="Celá obrazovka (F)">⛶</button>
+  <div id="menu" class="ov">
+    <div class="win">
+      <h1>KOŇAKOVÉ ŠPIČKY</h1>
+      <div class="sub">Postav plně automatickou cukrárnu</div>
+      <p>Zdědil jsi prázdnou výrobní halu a 5 200 Kč. Nakup sklady surovin, stroje a dopravníky a sestav linku, která sama vyrábí koňakové špičky: z mouky, cukru a vajec těsto, z těsta v peci korpusy, z másla, cukru, kakaa a koňaku krém, pak plnění, čokoládová poleva, chlazení a prodej v expedici. Plň zakázky, kupuj vylepšení Později přibudou větrníky s karamelovým krémem, rakvičky se šlehačkou a dárkové krabice – každý stroj umí přepnout recept. Staň se koňakovým králem.</p>
+      <p><span class="kbd">levé tl.</span> postavit / otevřít stroj / táhnout mapu &nbsp; <span class="kbd">pravé tl.</span> odstranit (vrátí peníze) &nbsp; <span class="kbd">R</span> otočit &nbsp; <span class="kbd">Q</span> pipeta &nbsp; <span class="kbd">T</span> zakázky, vylepšení a banka (půjčky) &nbsp; <span class="kbd">1–9</span> lišta &nbsp; <span class="kbd">WASD</span> posun &nbsp; <span class="kbd">kolečko</span> zoom &nbsp; <span class="kbd">F</span> celá obrazovka</p>
+      <div>
+        <button id="bContinue" class="p" hidden>Pokračovat</button>
+        <button id="bNew">Nová hra</button>
+      </div>
+      <div class="sub" style="margin-top:8px">Hra se ukládá automaticky každou minutu a při zavření stránky.</div>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+/* ===================== KONSTANTY A DATA ===================== */
+const TILE=32,W=48,H=32,N=W*H,GAP=.25,END=.875,STACK=20,OUTCAP=10,START_MONEY=5200;
+const DX=[0,1,0,-1],DY=[-1,0,1,0];
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const Kc=n=>Math.round(n).toLocaleString('cs-CZ')+' Kč';
+
+const ITEMS={
+ mouka:{n:'Mouka',price:2},
+ cukr:{n:'Cukr',price:2},
+ vejce:{n:'Vejce',price:4},
+ maslo:{n:'Máslo',price:6},
+ kakao:{n:'Kakao',price:5},
+ konak:{n:'Koňak',price:12},
+ cokolada:{n:'Čokoláda',price:8},
+ krabicka:{n:'Prázdná krabička',price:6,lock:2},
+ testo:{n:'Těsto'},
+ korpus:{n:'Piškotový korpus'},
+ krem:{n:'Koňakový krém'},
+ plnena:{n:'Naplněná špička'},
+ polita:{n:'Politá špička (teplá)'},
+ spicka:{n:'Koňaková špička',sell:35},
+ krabice:{n:'Krabice špiček (6 ks)',sell:270,pcs:6},
+ smetana:{n:'Smetana',price:7,lock:3},
+ odpal:{n:'Odpalované těsto'},
+ vkorpus:{n:'Větrníkový korpus'},
+ karamel:{n:'Karamelový krém'},
+ vplneny:{n:'Naplněný větrník'},
+ vpolity:{n:'Větrník s polevou (teplý)'},
+ vetrnik:{n:'Větrník',sell:45},
+ rtesto:{n:'Rakvičkové těsto'},
+ rkorpus:{n:'Rakvičkový korpus'},
+ slehacka:{n:'Šlehačka'},
+ rakvicka:{n:'Rakvička se šlehačkou',sell:30},
+ 'krabice-v':{n:'Krabice větrníků (6 ks)',sell:340,pcs:6},
+ 'krabice-r':{n:'Krabice rakviček (6 ks)',sell:230,pcs:6},
+ darkova:{n:'Dárková krabice (mix 6 ks)',sell:380,pcs:6},
+};
+const SELL=Object.keys(ITEMS).filter(k=>ITEMS[k].sell);
+const RAW=Object.keys(ITEMS).filter(k=>ITEMS[k].price);
+const RECIPES={
+ testo:{in:{mouka:2,cukr:1,vejce:1},n:2,time:4},
+ korpus:{in:{testo:1},n:1,time:3},
+ krem:{in:{maslo:1,cukr:1,kakao:1,konak:1},n:3,time:5},
+ plnena:{in:{korpus:1,krem:1},n:1,time:2},
+ polita:{in:{plnena:1,cokolada:1},n:1,time:2},
+ spicka:{in:{polita:1},n:1,time:4},
+ krabice:{in:{spicka:6,krabicka:1},n:1,time:3},
+ odpal:{in:{mouka:2,maslo:1,vejce:2},n:2,time:4,lock:3},
+ vkorpus:{in:{odpal:1},n:1,time:4,lock:3},
+ karamel:{in:{smetana:1,cukr:2,maslo:1},n:3,time:5,lock:3},
+ vplneny:{in:{vkorpus:1,karamel:1},n:1,time:2,lock:3},
+ vpolity:{in:{vplneny:1,cukr:1},n:1,time:2,lock:3},
+ vetrnik:{in:{vpolity:1},n:1,time:4,lock:3},
+ 'krabice-v':{in:{vetrnik:6,krabicka:1},n:1,time:3,lock:3},
+ rtesto:{in:{cukr:2,vejce:2,mouka:1},n:2,time:4,lock:4},
+ rkorpus:{in:{rtesto:1},n:1,time:5,lock:4},
+ slehacka:{in:{smetana:1,cukr:1},n:3,time:3,lock:4},
+ rakvicka:{in:{rkorpus:1,slehacka:1},n:1,time:2,lock:4},
+ 'krabice-r':{in:{rakvicka:6,krabicka:1},n:1,time:3,lock:4},
+ darkova:{in:{spicka:2,vetrnik:2,rakvicka:2,krabicka:1},n:1,time:4,lock:5},
+};
+// výrobek → skupina (pro panel postupu)
+const PRODUCT={spicka:'Špička',vetrnik:'Větrník',rakvicka:'Rakvička',krabice:'Krabice'};
+const RGROUP={testo:'spicka',korpus:'spicka',krem:'spicka',plnena:'spicka',polita:'spicka',spicka:'spicka',
+ odpal:'vetrnik',vkorpus:'vetrnik',karamel:'vetrnik',vplneny:'vetrnik',vpolity:'vetrnik',vetrnik:'vetrnik',
+ rtesto:'rakvicka',rkorpus:'rakvicka',slehacka:'rakvicka',rakvicka:'rakvicka',
+ krabice:'krabice','krabice-v':'krabice','krabice-r':'krabice',darkova:'krabice'};
+// kind: belt, inserter, source, machine, chest, sink, trash
+const BUILD={
+ pas:{n:'Dopravník',size:1,kind:'belt',speed:1.8,cost:20,d:'Přesouvá předměty rychlostí 1,8 dlaždice/s. Může vést přímo do stroje, expedice nebo regálu.'},
+ 'rychly-pas':{n:'Rychlý dopravník',size:1,kind:'belt',speed:3.6,cost:60,lock:1,d:'Dvakrát rychlejší dopravník.'},
+ ruka:{n:'Robotická ruka',size:1,kind:'inserter',reach:1,speed:1.5,cost:50,d:'Přebírá předměty z dlaždice za sebou na dlaždici před sebou (z pásu, regálu nebo stroje).'},
+ 'dlouha-ruka':{n:'Dlouhá ruka',size:1,kind:'inserter',reach:2,speed:1.5,cost:90,lock:2,d:'Robotická ruka s dosahem 2 dlaždice.'},
+ sklad:{n:'Sklad surovin',size:1,kind:'source',rate:1,cost:100,d:'Dodává zvolenou surovinu na dlaždici před sebou (1 ks/s). Každý kus stojí peníze. Kliknutím zvolíš surovinu.'},
+ hnetac:{n:'Hnětač těsta',size:2,kind:'machine',recs:['testo','odpal','rtesto'],cost:300},
+ pec:{n:'Pec',size:2,kind:'machine',recs:['korpus','vkorpus','rkorpus'],cost:350},
+ slehac:{n:'Šlehač krému',size:2,kind:'machine',recs:['krem','karamel','slehacka'],cost:300},
+ plnicka:{n:'Plnička',size:2,kind:'machine',recs:['plnena','vplneny','rakvicka'],cost:350},
+ polevacka:{n:'Polévací stroj',size:2,kind:'machine',recs:['polita','vpolity'],cost:350},
+ chladic:{n:'Chladicí tunel',size:2,kind:'machine',recs:['spicka','vetrnik'],cost:400},
+ balicka:{n:'Balička',size:2,kind:'machine',recs:['krabice','krabice-v','krabice-r','darkova'],cost:700,lock:2},
+ regal:{n:'Regál',size:1,kind:'chest',slots:12,cost:80,d:'Úložiště, 12 slotů po 20 ks. Přijímá z pásu i z ruky, vybírá se robotickou rukou.'},
+ expedice:{n:'Expedice',size:2,kind:'sink',cost:200,d:'Prodává hotové zákusky (špičky, větrníky, rakvičky) a krabice. Nic jiného nepřijme.'},
+ kos:{n:'Koš',size:1,kind:'trash',cost:30,d:'Zničí vše, co do něj přijde. Hodí se k odblokování zaseknutých pásů.'},
+};
+const MCOL={hnetac:['#c9b08a','#a88a5e'],pec:['#8a5a3a','#5e3a22'],slehac:['#d9c4a0','#b89a6a'],plnicka:['#c9a07a','#a07a56'],polevacka:['#7a4a2a','#4e2e18'],chladic:['#9ec7e6','#6a9bc0'],balicka:['#b89a6a','#8a6a44']};
+const ZAKAZKY=[
+ {n:'Trh na náměstí',item:'spicka',cnt:10,reward:600,d:'Stánkař z náměstí chce ochutnat tvých prvních 10 špiček. Postav kompletní linku a dodej je do expedice.',unlock:'rychlý dopravník, vylepšení Rychlé ruky'},
+ {n:'Cukrárna U Lípy',item:'spicka',cnt:60,reward:2000,d:'Místní cukrárna si objednala 60 špiček. Zrychli linku.',unlock:'dlouhá ruka, balička a krabičky'},
+ {n:'Hotel Imperial',item:'krabice',cnt:15,reward:5000,d:'Hotel chce 15 krabic po 6 kusech. Postav baličku a zásobuj ji krabičkami.',unlock:'větrníky (nové recepty ve strojích + smetana), vylepšení Velkoobchod a Rychlé stroje'},
+ {n:'Kavárna Slavia',item:'vetrnik',cnt:40,reward:6000,d:'Kavárna chce 40 větrníků. Přepni stroje na nové recepty (klikni na stroj): odpalované těsto, karamelový krém ze smetany, cukrová poleva.',unlock:'rakvičky se šlehačkou'},
+ {n:'Svatba na zámku',item:'rakvicka',cnt:60,reward:8000,d:'Na svatbu je potřeba 60 rakviček se šlehačkou. Rakvička nepotřebuje polevu ani chlazení – z plničky jde rovnou do expedice.',unlock:'dárková krabice, vylepšení Prémiová značka'},
+ {n:'Řetězec supermarketů',item:'darkova',cnt:30,reward:15000,d:'Supermarkety chtějí 30 dárkových krabic: v každé 2 špičky, 2 větrníky a 2 rakvičky. Sveď všechny tři linky do jedné baličky.',unlock:'zakázku Export do Vídně'},
+ {n:'Export do Vídně',item:'darkova',cnt:120,reward:40000,d:'Vídeňské kavárny chtějí 120 dárkových krabic. Splň to a jsi koňakový král.',unlock:'titul Koňakový král'},
+];
+const UPG={
+ 'rychle-ruky':{n:'Rychlé ruky',cost:1500,lock:1,d:'Robotické ruky pracují 2× rychleji.'},
+ 'velkoobchod':{n:'Velkoobchod',cost:3000,lock:3,d:'Suroviny jsou o 25 % levnější.'},
+ 'rychle-stroje':{n:'Rychlé stroje',cost:5000,lock:3,d:'Všechny stroje pracují 1,5× rychleji.'},
+ 'premium':{n:'Prémiová značka',cost:8000,lock:5,d:'Prodejní cena všech zákusků a krabic o 30 % vyšší.'},
+};
+const LOANS=[
+ {n:'Malá půjčka',amt:5000,rate:.10,lock:0},
+ {n:'Střední půjčka',amt:20000,rate:.15,lock:2},
+ {n:'Velká půjčka',amt:60000,rate:.20,lock:4},
+];
+const LOAN_PARTS=20,LOAN_PERIOD=60,LOAN_PENALTY=.1;
+const unlocked=lock=>!lock||S.zak.done>=lock;
+const hasUp=id=>!!S.up[id];
+const rawPrice=it=>ITEMS[it].price*(hasUp('velkoobchod')?.75:1);
+const sellPrice=it=>ITEMS[it].sell*(hasUp('premium')?1.3:1);
+function recipeText(id){const r=RECIPES[id];return Object.keys(r.in).map(k=>`${r.in[k]}× ${ITEMS[k].n}`).join(' + ')+` → ${r.n}× ${ITEMS[id].n} (${r.time} s)`}
+const REC_MACHINE={};
+for(const k in BUILD){const d=BUILD[k];if(d.recs){d.rec=d.recs[0];for(const r of d.recs)REC_MACHINE[r]=k;if(!d.d)d.d=recipeText(d.rec)+'. Výstup posílá dopředu (šipka) – na pás nebo rovnou do dalšího stroje.'+(d.recs.length>1?'\nDalší recepty (kliknutím na stroj): '+d.recs.slice(1).map(r=>ITEMS[r].n).join(', ')+'.':'')}}
+const mrec=e=>e.rec||BUILD[e.type].rec;
+function setRecipe(e,r){if(mrec(e)===r)return;e.rec=r;e.inp={};e.out=0;e.cr=false;e.prog=0;UI.dirty=true}
+
+/* ===================== STAV HRY ===================== */
+let S=null,tick=0;
+function newGame(){S={money:START_MONEY,entAt:new Int32Array(N).fill(-1),ents:new Map(),nextId:1,hand:null,rot:1,lastRaw:null,time:0,zak:{done:0,start:0},up:{},sales:[],won:false,loan:null,stats:{sold:{},pieces:0,income:0,spent:0,built:0,trashed:0,made:0,loans:0,interest:0}}}
+function invTake(inv,it,n){const c=inv[it]||0;const t=Math.min(c,n);if(t<=0)return 0;if(c-t<=0)delete inv[it];else inv[it]=c-t;return t}
+function invHas(inv,need){for(const k in need)if((inv[k]||0)<need[k])return false;return true}
+function chestFree(inv,it,slots){const c=inv[it]||0;if(c>0&&c%STACK!==0)return true;let used=0;for(const k in inv)used+=Math.ceil(inv[k]/STACK);return used<slots}
+
+/* ===================== ENTITY ===================== */
+function entAtTile(x,y){if(x<0||y<0||x>=W||y>=H)return null;const id=S.entAt[y*W+x];return id>=0?S.ents.get(id)||null:null}
+function entTiles(e){const t=[];for(let j=0;j<e.s;j++)for(let i=0;i<e.s;i++)t.push((e.y+j)*W+e.x+i);return t}
+function outTile(e){const s=e.s,o=(s-1)>>1;switch(e.dir){case 0:return[e.x+o,e.y-1];case 1:return[e.x+s,e.y+o];case 2:return[e.x+o,e.y+s];default:return[e.x-1,e.y+o]}}
+function mkEnt(type,x,y,dir){const d=BUILD[type];const e={id:S.nextId++,type,x,y,dir,k:d.kind,s:d.size,anim:0};
+ switch(d.kind){
+  case 'belt':e.items=[];break;
+  case 'inserter':e.hand=null;e.ph=0;e.st=0;break;
+  case 'chest':e.inv={};break;
+  case 'source':e.item=null;e.prog=0;e.poor=false;break;
+  case 'machine':e.inp={};e.out=0;e.cr=false;e.prog=0;e.rec=d.rec;break;
+  case 'sink':e.sold=0;e.earned=0;e.fl=0;break;
+  case 'trash':e.fl=0;break;
+ }return e}
+function canPlace(type,x,y){const s=BUILD[type].size;for(let j=0;j<s;j++)for(let i=0;i<s;i++){const tx=x+i,ty=y+j;if(tx<0||ty<0||tx>=W||ty>=H)return false;if(S.entAt[ty*W+tx]>=0)return false}return true}
+function place(type,x,y,dir){const e=mkEnt(type,x,y,dir);S.ents.set(e.id,e);for(const k of entTiles(e))S.entAt[k]=e.id;S.stats.built++;return e}
+function removeEnt(e){for(const k of entTiles(e))if(S.entAt[k]===e.id)S.entAt[k]=-1;S.ents.delete(e.id);S.money+=BUILD[e.type].cost;if(UI.ent===e.id)closeEnt();UI.dirty=true}
+function entContents(e){const o={};const add=(it,n)=>{if(it&&n>0)o[it]=(o[it]||0)+n};
+ if(e.inv)for(const k in e.inv)add(k,e.inv[k]);if(e.inp)for(const k in e.inp)add(k,e.inp[k]);if(e.k==='machine')add(mrec(e),e.out);
+ if(e.items)for(const i of e.items)add(i.item,1);if(e.hand)add(e.hand,1);return o}
+
+/* ---- dopravníky ---- */
+function beltFree(b,pos){for(const o of b.items)if(Math.abs(o.pos-pos)<GAP)return false;return true}
+function beltInsert(b,item,pos){if(!beltFree(b,pos))return false;const it=b.items;let i=0;while(i<it.length&&it[i].pos>pos)i++;it.splice(i,0,{item,pos,t:tick});return true}
+const DROP_POS=[.5,.25,.75,.0];
+function beltDrop(b,item){for(const p of DROP_POS)if(beltInsert(b,item,p))return true;return false}
+
+/* ---- přijímání / vydávání ---- */
+function accepts(t,it){switch(t.k){
+ case 'belt':return DROP_POS.some(p=>beltFree(t,p));
+ case 'chest':return chestFree(t.inv,it,BUILD[t.type].slots);
+ case 'machine':{const need=RECIPES[mrec(t)].in[it];return !!need&&(t.inp[it]||0)<need*2}
+ case 'sink':return !!ITEMS[it].sell;
+ case 'trash':return true;
+ default:return false}}
+function give(t,it){switch(t.k){
+ case 'belt':return beltDrop(t,it);
+ case 'chest':if(!chestFree(t.inv,it,BUILD[t.type].slots))return false;t.inv[it]=(t.inv[it]||0)+1;return true;
+ case 'machine':t.inp[it]=(t.inp[it]||0)+1;return true;
+ case 'sink':sell(t,it);return true;
+ case 'trash':S.stats.trashed++;t.fl=1;return true;
+ default:return false}}
+function takeFrom(s,ok){switch(s.k){
+ case 'belt':for(let i=0;i<s.items.length;i++)if(ok(s.items[i].item)){const it=s.items[i].item;s.items.splice(i,1);return it}return null;
+ case 'chest':for(const k in s.inv)if(ok(k)){invTake(s.inv,k,1);return k}return null;
+ case 'machine':{const p=mrec(s);if(s.out>0&&ok(p)){s.out--;return p}return null}
+ default:return null}}
+// cíl pro přímý výstup (stroj/sklad posílá dopředu)
+function frontTarget(e){const o=outTile(e);const t=entAtTile(o[0],o[1]);if(!t||t.k==='inserter'||t.k==='source')return null;if(t.k==='belt'&&t.dir===(e.dir+2)%4)return null;return t}
+
+/* ---- prodej a zakázky ---- */
+function sell(t,it){const p=sellPrice(it);S.money+=p;S.stats.income+=p;S.stats.sold[it]=(S.stats.sold[it]||0)+1;const pcs=ITEMS[it].pcs||1;S.stats.pieces+=pcs;S.sales.push([S.time,pcs]);t.sold+=pcs;t.earned+=p;t.fl=1;checkZak()}
+function zakProg(){const z=ZAKAZKY[S.zak.done];return z?(S.stats.sold[z.item]||0)-S.zak.start:0}
+function takeLoan(i){const L=LOANS[i];if(!L||S.loan||!unlocked(L.lock))return false;const debt=Math.round(L.amt*(1+L.rate));S.loan={n:L.n,amt:L.amt,debt,inst:Math.ceil(debt/LOAN_PARTS),next:S.time+LOAN_PERIOD,late:0};S.money+=L.amt;S.stats.loans=(S.stats.loans||0)+1;S.stats.interest=(S.stats.interest||0)+debt-L.amt;msg(`🏦 ${L.n}: +${Kc(L.amt)}. Splatíš celkem ${Kc(debt)} – splátka ${Kc(S.loan.inst)} každou minutu.`);UI.lastHtml.zak='';UI.dirty=true;return true}
+function repay(n){const l=S.loan;if(!l)return false;const p=Math.min(n==null?l.debt:n,l.debt,Math.floor(S.money));if(p<=0){msg('Nedostatek peněz na splátku');return false}S.money-=p;l.debt-=p;if(l.debt<=0){S.loan=null;msg('🏦 Půjčka splacena! Můžeš si vzít další.')}else msg(`Splaceno ${Kc(p)}, zbývá ${Kc(l.debt)}`);UI.lastHtml.zak='';UI.dirty=true;return true}
+function updLoan(){const l=S.loan;if(!l||S.time<l.next)return;l.next+=LOAN_PERIOD;const due=Math.min(l.inst,l.debt);const p=Math.min(due,Math.floor(S.money));S.money-=p;l.debt-=p;
+ if(l.debt<=0){S.loan=null;msg('🏦 Poslední splátka – půjčka splacena!')}
+ else if(p<due){const pen=Math.max(1,Math.round((due-p)*LOAN_PENALTY));l.debt+=pen;l.late++;S.stats.interest=(S.stats.interest||0)+pen;msg(`🏦 Nemáš na splátku ${Kc(due)}! Penále +${Kc(pen)}, dluh ${Kc(l.debt)}`)}
+ UI.dirty=true}
+const loanLeft=()=>S.loan?Math.max(0,Math.ceil(S.loan.next-S.time)):0;
+function checkZak(){const z=ZAKAZKY[S.zak.done];if(!z)return;if(zakProg()>=z.cnt){S.money+=z.reward;S.zak.done++;const nz=ZAKAZKY[S.zak.done];S.zak.start=nz?(S.stats.sold[nz.item]||0):0;msg(`Zakázka splněna: ${z.n} (+${Kc(z.reward)}) – odemčeno: ${z.unlock}`);UI.dirty=true;if(!nz&&!S.won){S.won=true;msg('🏆 Všechny zakázky splněny! Jsi KOŇAKOVÝ KRÁL. Hra pokračuje volně.')}}}
+function rate(){const t=S.time-60;while(S.sales.length&&S.sales[0][0]<t)S.sales.shift();let n=0;for(const s of S.sales)n+=s[1];return n}
+
+/* ===================== AKTUALIZACE ===================== */
+function updBelt(e,dt){const sp=BUILD[e.type].speed*dt,it=e.items;
+ for(let i=0;i<it.length;i++){const o=it[i];if(o.t===tick)continue;let np=o.pos+sp;if(i>0)np=Math.min(np,it[i-1].pos-GAP);
+  if(np>=END&&i===0){const n=entAtTile(e.x+DX[e.dir],e.y+DY[e.dir]);
+   if(n){if(n.k==='belt'){if(n.dir!==(e.dir+2)%4){const side=n.dir!==e.dir;const ep=side?.5:Math.max(0,np-1);if(beltInsert(n,o.item,ep)){it.splice(i,1);i--;continue}}}
+    else if(n.k!=='inserter'&&n.k!=='source'&&accepts(n,o.item)&&give(n,o.item)){it.splice(i,1);i--;continue}}
+   np=Math.min(np,END)}
+  o.pos=Math.max(o.pos,Math.min(np,END))}}
+function updInserter(e,dt){const d=BUILD[e.type];const sp=d.speed*(hasUp('rychle-ruky')?2:1);
+ const sx=e.x-DX[e.dir]*d.reach,sy=e.y-DY[e.dir]*d.reach,tx=e.x+DX[e.dir]*d.reach,ty=e.y+DY[e.dir]*d.reach;
+ if(e.st===0){const src=entAtTile(sx,sy),tgt=entAtTile(tx,ty);if(!src||!tgt||src===tgt)return;const item=takeFrom(src,it=>accepts(tgt,it));if(item){e.hand=item;e.st=1;e.ph=0}}
+ else if(e.st===1){e.ph+=sp*dt;if(e.ph>=1){e.ph=1;e.st=2}}
+ else if(e.st===2){const tgt=entAtTile(tx,ty);if(tgt&&accepts(tgt,e.hand)&&give(tgt,e.hand)){e.hand=null;e.st=3}}
+ else{e.ph-=sp*dt;if(e.ph<=0){e.ph=0;e.st=0}}}
+function updMachine(e,dt){const rid=mrec(e),r=RECIPES[rid];const sp=hasUp('rychle-stroje')?1.5:1;
+ if(e.out>0){const t=frontTarget(e);if(t&&accepts(t,rid)&&give(t,rid))e.out--}
+ if(!e.cr&&e.out+r.n<=OUTCAP&&invHas(e.inp,r.in)){for(const i in r.in)invTake(e.inp,i,r.in[i]);e.cr=true;e.prog=0}
+ if(e.cr){e.anim+=dt;e.prog+=dt*sp/r.time;if(e.prog>=1){e.out+=r.n;e.cr=false;e.prog=0;S.stats.made+=r.n}}}
+function updSource(e,dt){if(!e.item)return;e.prog=Math.min(1,e.prog+BUILD[e.type].rate*dt);if(e.prog<1)return;
+ const price=rawPrice(e.item);if(S.money<price){e.poor=true;return}e.poor=false;
+ const t=frontTarget(e);if(!t)return;if(accepts(t,e.item)&&give(t,e.item)){S.money-=price;S.stats.spent+=price;e.prog=0;e.anim+=1}}
+function update(dt){S.time+=dt;tick++;
+ for(const e of S.ents.values()){switch(e.k){case 'belt':updBelt(e,dt);break;case 'inserter':updInserter(e,dt);break;case 'machine':updMachine(e,dt);break;case 'source':updSource(e,dt);break;case 'sink':case 'trash':e.fl=Math.max(0,e.fl-dt*2);break}}
+ rate();updLoan()}
+
+/* ===================== IKONY ===================== */
+const ICON={};
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.fill()}
+function cube(c,x,y){c.fillStyle='#fff';c.fillRect(x,y,9,9);c.fillStyle='#d8dde6';c.fillRect(x,y+6,9,3);c.fillStyle='#eef2f7';c.fillRect(x,y,9,2)}
+function korpus(c){c.fillStyle='#c9a070';c.beginPath();c.moveTo(6,22);c.lineTo(26,22);c.lineTo(23,30);c.lineTo(9,30);c.closePath();c.fill();c.fillStyle='#a07a4a';c.fillRect(6,22,20,2)}
+function puff(c,a,b){c.fillStyle=a;c.beginPath();c.ellipse(16,22,11,7,0,0,7);c.fill();c.fillStyle=b;c.beginPath();c.arc(9,19,4,0,7);c.arc(16,15,5,0,7);c.arc(23,19,4,0,7);c.fill()}
+function coffin(c){c.fillStyle='#f0dcb0';c.beginPath();c.moveTo(6,16);c.lineTo(26,16);c.lineTo(23,29);c.lineTo(9,29);c.closePath();c.fill();c.fillStyle='#d4b888';c.fillRect(6,16,20,2)}
+function cone(c,col){c.fillStyle=col;c.beginPath();c.moveTo(7,23);c.lineTo(25,23);c.lineTo(16,2);c.closePath();c.fill()}
+function drawItemIcon(c,id){c.clearRect(0,0,32,32);
+ switch(id){
+  case 'mouka':c.fillStyle='#f1e6cf';rr(c,6,9,20,20,5);c.fillStyle='#d9c9a8';c.fillRect(11,4,10,7);c.fillStyle='#7a8fb8';c.font='bold 11px sans-serif';c.textAlign='center';c.fillText('M',16,25);break;
+  case 'cukr':cube(c,6,10);cube(c,17,13);cube(c,11,20);break;
+  case 'vejce':c.fillStyle='#f6ecd8';c.beginPath();c.ellipse(16,17,8,11,0,0,7);c.fill();c.fillStyle='rgba(255,255,255,.7)';c.beginPath();c.ellipse(13,12,2.5,4,0,0,7);c.fill();break;
+  case 'maslo':c.fillStyle='#e8c23a';c.fillRect(5,11,22,13);c.fillStyle='#f6dc6a';c.fillRect(5,9,22,5);c.fillStyle='#c9a52a';c.fillRect(5,22,22,3);break;
+  case 'kakao':c.fillStyle='#7a4a2a';rr(c,6,9,20,20,5);c.fillStyle='#5a3218';c.fillRect(11,4,10,7);c.fillStyle='#f0d8b0';c.font='bold 11px sans-serif';c.textAlign='center';c.fillText('K',16,25);break;
+  case 'konak':c.fillStyle='#c98a2a';rr(c,10,11,12,18,3);c.fillRect(13,5,6,8);c.fillStyle='#3a2a1a';c.fillRect(13,3,6,3);c.fillStyle='#f0e0b0';c.fillRect(12,17,8,5);break;
+  case 'cokolada':c.fillStyle='#4a2a16';rr(c,5,7,22,18,2);c.strokeStyle='#2e180a';c.lineWidth=1;c.beginPath();c.moveTo(12,7);c.lineTo(12,25);c.moveTo(19,7);c.lineTo(19,25);c.moveTo(5,16);c.lineTo(27,16);c.stroke();break;
+  case 'krabicka':c.fillStyle='#d8b890';c.fillRect(4,13,24,10);c.fillStyle='#c0a078';c.fillRect(4,10,24,4);c.fillStyle='#a08058';c.fillRect(14,10,4,13);break;
+  case 'testo':c.fillStyle='#e9d4a8';c.beginPath();c.ellipse(16,18,11,9,0,0,7);c.fill();c.fillStyle='#f5e6c6';c.beginPath();c.ellipse(12,14,4,3,0,0,7);c.fill();break;
+  case 'korpus':korpus(c);break;
+  case 'krem':c.fillStyle='#7a4a2a';c.beginPath();c.ellipse(16,25,11,5,0,0,7);c.fill();c.beginPath();c.ellipse(16,19,8,4,0,0,7);c.fill();c.beginPath();c.ellipse(16,14,5,3,0,0,7);c.fill();c.beginPath();c.ellipse(16,10,2.5,2,0,0,7);c.fill();c.fillStyle='rgba(255,255,255,.2)';c.beginPath();c.ellipse(12,24,4,2,0,0,7);c.fill();break;
+  case 'plnena':korpus(c);cone(c,'#9a6a40');break;
+  case 'polita':korpus(c);cone(c,'#3e2314');c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=2;c.beginPath();c.moveTo(14,9);c.lineTo(11,18);c.stroke();break;
+  case 'spicka':korpus(c);cone(c,'#3e2314');c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=2;c.beginPath();c.moveTo(14,9);c.lineTo(11,18);c.stroke();c.fillStyle='#fff';c.beginPath();c.moveTo(25,4);c.lineTo(26,7);c.lineTo(29,8);c.lineTo(26,9);c.lineTo(25,12);c.lineTo(24,9);c.lineTo(21,8);c.lineTo(24,7);c.closePath();c.fill();break;
+  case 'krabice':c.fillStyle='#b89a6a';c.fillRect(4,10,24,18);c.fillStyle='#d4b888';c.fillRect(4,8,24,6);c.fillStyle='#c03030';c.fillRect(14,8,4,20);c.fillRect(4,17,24,4);break;
+  case 'smetana':c.fillStyle='#e8eef5';rr(c,8,8,16,21,3);c.fillStyle='#4a78c0';c.fillRect(8,8,16,6);c.fillStyle='#fff';c.beginPath();c.ellipse(16,21,5,3,0,0,7);c.fill();break;
+  case 'odpal':c.fillStyle='#e9d4a8';c.beginPath();c.ellipse(16,18,11,9,0,0,7);c.fill();c.fillStyle='#d9b870';c.beginPath();c.arc(11,16,3,0,7);c.arc(20,21,3,0,7);c.arc(19,13,2,0,7);c.fill();break;
+  case 'vkorpus':puff(c,'#d9b070','#c09050');break;
+  case 'karamel':c.fillStyle='#c98a3a';c.beginPath();c.ellipse(16,25,11,5,0,0,7);c.fill();c.beginPath();c.ellipse(16,19,8,4,0,0,7);c.fill();c.beginPath();c.ellipse(16,14,5,3,0,0,7);c.fill();c.beginPath();c.ellipse(16,10,2.5,2,0,0,7);c.fill();c.fillStyle='rgba(255,255,255,.25)';c.beginPath();c.ellipse(12,24,4,2,0,0,7);c.fill();break;
+  case 'vplneny':puff(c,'#d9b070','#c09050');c.fillStyle='#f3e2c0';c.fillRect(6,15,20,4);c.fillStyle='#c98a3a';c.fillRect(6,19,20,3);break;
+  case 'vpolity':puff(c,'#d9b070','#c09050');c.fillStyle='#f3e2c0';c.fillRect(6,15,20,4);c.fillStyle='#c98a3a';c.fillRect(6,19,20,3);c.fillStyle='#b06a1a';c.beginPath();c.ellipse(16,9,10,5,0,0,7);c.fill();break;
+  case 'vetrnik':puff(c,'#d9b070','#c09050');c.fillStyle='#f3e2c0';c.fillRect(6,15,20,4);c.fillStyle='#c98a3a';c.fillRect(6,19,20,3);c.fillStyle='#b06a1a';c.beginPath();c.ellipse(16,9,10,5,0,0,7);c.fill();c.fillStyle='rgba(255,255,255,.5)';c.beginPath();c.ellipse(12,8,3,1.5,0,0,7);c.fill();break;
+  case 'rtesto':c.fillStyle='#f7f0e0';c.beginPath();c.ellipse(16,18,11,9,0,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.ellipse(12,14,5,3,0,0,7);c.fill();break;
+  case 'rkorpus':coffin(c);break;
+  case 'slehacka':c.fillStyle='#fdfaf2';c.beginPath();c.ellipse(16,25,11,5,0,0,7);c.fill();c.beginPath();c.ellipse(16,19,8,4,0,0,7);c.fill();c.beginPath();c.ellipse(16,14,5,3,0,0,7);c.fill();c.beginPath();c.ellipse(16,10,2.5,2,0,0,7);c.fill();c.strokeStyle='#d8d0c0';c.lineWidth=1;c.beginPath();c.ellipse(16,25,11,5,0,0,7);c.stroke();break;
+  case 'rakvicka':coffin(c);c.fillStyle='#fdfaf2';c.beginPath();c.ellipse(16,13,9,5,0,0,7);c.fill();c.beginPath();c.ellipse(16,8,5,3,0,0,7);c.fill();c.fillStyle='#c03030';c.beginPath();c.arc(16,7,2,0,7);c.fill();break;
+  case 'krabice-v':c.fillStyle='#b89a6a';c.fillRect(4,10,24,18);c.fillStyle='#d4b888';c.fillRect(4,8,24,6);c.fillStyle='#c98a3a';c.fillRect(14,8,4,20);c.fillRect(4,17,24,4);break;
+  case 'krabice-r':c.fillStyle='#b89a6a';c.fillRect(4,10,24,18);c.fillStyle='#d4b888';c.fillRect(4,8,24,6);c.fillStyle='#f0f0f0';c.fillRect(14,8,4,20);c.fillRect(4,17,24,4);break;
+  case 'darkova':c.fillStyle='#8a2a6a';c.fillRect(4,10,24,18);c.fillStyle='#b04a90';c.fillRect(4,8,24,6);c.fillStyle='#ffd040';c.fillRect(14,8,4,20);c.fillRect(4,17,24,4);c.beginPath();c.arc(12,7,3,0,7);c.arc(20,7,3,0,7);c.fill();break;
+  default:c.fillStyle='#888';c.fillRect(8,8,16,16)}}
+function icon(id){if(!ICON[id]){const cv=document.createElement('canvas');if(BUILD[id]){const s=BUILD[id].size*TILE;cv.width=cv.height=s;const c=cv.getContext('2d');drawEnt(c,mkFake(id),true)}else{cv.width=cv.height=32;drawItemIcon(cv.getContext('2d'),id)}ICON[id]={cv,url:cv.toDataURL?cv.toDataURL():''}}return ICON[id]}
+const icon_=id=>icon(id).cv;
+const img=id=>`<img src="${icon(id).url}" alt="">`;
+function mkFake(type){const d=BUILD[type];return{id:0,type,x:0,y:0,dir:1,k:d.kind,s:d.size,anim:.6,ph:.5,st:1,items:[],inv:{},inp:{},out:0,cr:true,prog:.6,item:null,hand:null,fl:0}}
+
+/* ===================== VYKRESLOVÁNÍ ===================== */
+const cv=$('cv'),ctx=cv.getContext('2d');let dpr=1,cw=960,ch=600;
+const cam={x:W/2,y:H/2,z:.8};
+function fit(){dpr=window.devicePixelRatio||1;cw=cv.clientWidth||960;ch=cv.clientHeight||600;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
+const T=()=>S?S.time:0;
+function arrow(c,x,y,dir,size,col){c.save();c.translate(x,y);c.rotate(dir*Math.PI/2);c.fillStyle=col;c.beginPath();c.moveTo(0,-size);c.lineTo(size*.8,size*.5);c.lineTo(-size*.8,size*.5);c.closePath();c.fill();c.restore()}
+function outArrow(c,e,col){const o=outTile(e);const ax=(o[0]+.5)*TILE-DX[e.dir]*TILE*.7,ay=(o[1]+.5)*TILE-DY[e.dir]*TILE*.7;arrow(c,ax,ay,e.dir,5,col||'#ffd040')}
+function drawEnt(c,e,ic){const px=e.x*TILE,py=e.y*TILE,s=e.s*TILE,d=BUILD[e.type];
+ switch(e.k){
+  case 'belt':{c.save();c.translate(px+16,py+16);c.rotate(e.dir*Math.PI/2);c.beginPath();c.rect(-16,-16,32,32);c.clip();c.fillStyle='#4a4f55';c.fillRect(-16,-16,32,32);c.fillStyle='#737b85';c.fillRect(-16,-16,4,32);c.fillRect(12,-16,4,32);
+   const off=(T()*d.speed*TILE)%8;c.strokeStyle=e.type==='rychly-pas'?'#e0553a':'#ffd040';c.lineWidth=2;c.beginPath();for(let k=-1;k<5;k++){const y=k*8+4-off;c.moveTo(-7,y+3);c.lineTo(0,y-3);c.lineTo(7,y+3)}c.stroke();c.restore();break}
+  case 'inserter':{c.fillStyle='#4a4f55';c.fillRect(px+7,py+7,18,18);c.fillStyle=e.type==='dlouha-ruka'?'#d94a3b':'#d9a23a';c.fillRect(px+11,py+11,10,10);
+   if(ic){arrow(c,px+16,py+5,0,4,'#fff');const a=-Math.PI/4;c.strokeStyle='#e0b050';c.lineWidth=4;c.lineCap='round';c.beginPath();c.moveTo(px+16,py+16);c.lineTo(px+16+Math.cos(a)*12,py+16+Math.sin(a)*12);c.stroke();break}
+   const a0=(e.dir+2)*Math.PI/2-Math.PI/2,a1=e.dir*Math.PI/2-Math.PI/2;const a=a0+(a1-a0)*e.ph;const L=d.reach*TILE*.8;const cx=px+16,cy=py+16,hx=cx+Math.cos(a)*L,hy=cy+Math.sin(a)*L;
+   c.strokeStyle='#e0b050';c.lineWidth=4;c.lineCap='round';c.beginPath();c.moveTo(cx,cy);c.lineTo(hx,hy);c.stroke();c.fillStyle='#777';c.fillRect(hx-4,hy-4,8,8);if(e.hand)c.drawImage(icon_(e.hand),hx-7,hy-7,14,14);break}
+  case 'chest':{c.fillStyle='#8a6a44';c.fillRect(px+3,py+3,26,26);c.fillStyle='#b89a6a';c.fillRect(px+5,py+5,22,5);c.fillRect(px+5,py+13,22,5);c.fillRect(px+5,py+21,22,5);
+   if(!ic){const ks=Object.keys(e.inv);ks.slice(0,3).forEach((k,i)=>c.drawImage(icon_(k),px+6+i*7,py+8+i*6,12,12))}break}
+  case 'source':{c.fillStyle='#6a5a4c';c.fillRect(px+2,py+2,28,28);c.fillStyle='#d9c4a0';c.fillRect(px+5,py+5,22,22);c.fillStyle='#8a6a44';c.fillRect(px+5,py+5,22,5);
+   if(e.item)c.drawImage(icon_(e.item),px+8,py+10,16,16);else{c.fillStyle='#a08058';c.font='bold 16px sans-serif';c.textAlign='center';c.fillText('?',px+16,py+24)}
+   if(e.poor&&!ic&&(T()*2|0)%2===0){c.fillStyle='#ff5a3a';c.font='bold 14px sans-serif';c.textAlign='center';c.fillText('Kč',px+16,py+14)}
+   outArrow(c,e,'#ffd040');break}
+  case 'machine':{const col=MCOL[e.type];c.fillStyle='#5b4a3c';rr(c,px+2,py+2,60,60,6);c.fillStyle=col[0];rr(c,px+5,py+5,54,54,5);c.fillStyle=col[1];c.fillRect(px+5,py+5,54,9);
+   const cx=px+32,cy=py+36,a=e.anim,run=e.cr||ic;
+   switch(e.type){
+    case 'hnetac':c.fillStyle='#eee';c.beginPath();c.arc(cx,cy,16,0,7);c.fill();c.fillStyle='#e9d4a8';c.beginPath();c.arc(cx,cy,12,0,7);c.fill();c.save();c.translate(cx,cy);c.rotate(a*3);c.strokeStyle='#555';c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(0,-10);c.lineTo(6,-6);c.stroke();c.restore();break;
+    case 'pec':c.fillStyle='#2a2422';c.fillRect(px+12,py+19,40,32);c.fillStyle=run?`rgba(255,${(120+80*Math.sin(a*9))|0},40,.95)`:'#444';c.fillRect(px+16,py+25,32,16);c.fillStyle='#777';c.fillRect(px+14,py+45,36,3);if(run){c.fillStyle='rgba(255,230,120,.7)';c.fillRect(px+22,py+30,20,6)}break;
+    case 'slehac':c.fillStyle='#ddd';c.beginPath();c.arc(cx,cy,16,0,7);c.fill();c.fillStyle='#8a5a3a';c.beginPath();c.arc(cx,cy,12,0,7);c.fill();c.save();c.translate(cx,cy);c.rotate(a*9);c.strokeStyle='#ccc';c.lineWidth=2;for(let i=0;i<3;i++){c.rotate(Math.PI*2/3);c.beginPath();c.ellipse(0,-5,3,7,0,0,7);c.stroke()}c.restore();break;
+    case 'plnicka':c.save();c.translate(px+16,py+22);c.scale(1,1);c.drawImage(icon_('korpus'),0,2,32,32);c.restore();c.fillStyle='#999';c.fillRect(cx-4,py+14,8,10);c.fillStyle='#7a4a2a';const dy=run?Math.abs(Math.sin(a*5))*8:0;c.beginPath();c.moveTo(cx-5,py+24);c.lineTo(cx+5,py+24);c.lineTo(cx,py+30+dy);c.closePath();c.fill();break;
+    case 'polevacka':c.fillStyle='#3a2314';c.fillRect(px+10,py+40,44,10);for(let i=0;i<6;i++){const h=run?12+Math.sin(a*6+i)*4:8;c.fillStyle='#4a2a16';c.fillRect(px+12+i*7,py+16,4,h+12)}c.fillStyle='rgba(255,255,255,.15)';c.fillRect(px+10,py+40,44,2);break;
+    case 'chladic':c.fillStyle='#e8f4fb';c.fillRect(px+10,py+18,44,32);c.fillStyle='#bcd9ee';c.fillRect(px+10,py+18,44,4);c.save();c.translate(cx,cy+2);c.rotate(run?a*6:0);c.fillStyle='#7aa6c8';for(let i=0;i<4;i++){c.rotate(Math.PI/2);c.fillRect(-2,0,4,11)}c.restore();c.fillStyle='#fff';c.font='12px sans-serif';c.textAlign='center';c.fillText('❄',px+18,py+30);c.fillText('❄',px+48,py+46);break;
+    case 'balicka':c.fillStyle='#b89a6a';c.fillRect(px+14,py+26,36,22);c.fillStyle='#d4b888';const lid=run?Math.abs(Math.sin(a*4))*8:0;c.fillRect(px+14,py+22-lid,36,6);c.fillStyle='#c03030';c.fillRect(px+30,py+26,4,22);break;
+   }
+   if(!ic){c.fillStyle='rgba(0,0,0,.45)';c.fillRect(px+6,py+15,20,20);c.drawImage(icon_(mrec(e)),px+8,py+17,16,16);
+    c.fillStyle='#222';c.fillRect(px+8,py+53,48,5);c.fillStyle='#6ab04c';c.fillRect(px+8,py+53,48*(e.cr?e.prog:0),5);
+    if(e.out>0){c.fillStyle='#fff';c.font='bold 11px sans-serif';c.textAlign='right';c.fillText(e.out,px+58,py+26)}}
+   outArrow(c,e);break}
+  case 'sink':{c.fillStyle='#4a5a6a';rr(c,px+2,py+2,60,60,6);c.fillStyle='#2c3640';c.fillRect(px+6,py+30,52,28);c.fillStyle='#d9d9d9';c.fillRect(px+8,py+8,48,18);c.fillStyle='#c03030';c.fillRect(px+8,py+8,48,4);
+   c.fillStyle='#fff';c.font='bold 11px sans-serif';c.textAlign='center';c.fillText('EXPEDICE',px+32,py+22);
+   c.fillStyle='#777';c.fillRect(px+12,py+34,40,20);c.fillStyle='#333';c.beginPath();c.arc(px+18,py+56,4,0,7);c.arc(px+46,py+56,4,0,7);c.fill();
+   if(e.fl>0&&!ic){c.fillStyle=`rgba(120,255,140,${e.fl*.7})`;c.font='bold 14px sans-serif';c.fillText('+Kč',px+32,py+48)}break}
+  case 'trash':{c.fillStyle='#555';c.fillRect(px+7,py+9,18,20);c.fillStyle='#777';c.fillRect(px+5,py+6,22,4);c.fillStyle='#333';for(let i=0;i<3;i++)c.fillRect(px+10+i*5,py+13,2,13);if(e.fl>0&&!ic){c.fillStyle=`rgba(255,120,80,${e.fl})`;c.fillRect(px+7,py+9,18,20)}break}
+ }}
+function visibleEnts(x0,y0,x1,y1){const seen=new Set(),out=[];for(let y=Math.max(0,y0-2);y<=Math.min(H-1,y1);y++)for(let x=Math.max(0,x0-2);x<=Math.min(W-1,x1);x++){const id=S.entAt[y*W+x];if(id>=0&&!seen.has(id)){seen.add(id);const e=S.ents.get(id);if(e)out.push(e)}}return out}
+function render(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#2b2219';ctx.fillRect(0,0,cw,ch);if(!S)return;
+ const z=cam.z;ctx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*TILE*z),dpr*(ch/2-cam.y*TILE*z));
+ const hw=cw/(2*z*TILE),hh=ch/(2*z*TILE);const x0=Math.max(0,Math.floor(cam.x-hw)-1),x1=Math.min(W-1,Math.ceil(cam.x+hw)+1),y0=Math.max(0,Math.floor(cam.y-hh)-1),y1=Math.min(H-1,Math.ceil(cam.y+hh)+1);
+ // zdi a podlaha
+ ctx.fillStyle='#5a4636';ctx.fillRect(-TILE,-TILE,(W+2)*TILE,(H+2)*TILE);ctx.fillStyle='#7a6450';ctx.fillRect(-TILE+6,-TILE+6,(W+2)*TILE-12,(H+2)*TILE-12);
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){ctx.fillStyle=(x+y)&1?'#e8dcc8':'#e0d2bc';ctx.fillRect(x*TILE,y*TILE,TILE+.5,TILE+.5)}
+ ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;ctx.beginPath();for(let x=x0;x<=x1+1;x++){ctx.moveTo(x*TILE,y0*TILE);ctx.lineTo(x*TILE,(y1+1)*TILE)}for(let y=y0;y<=y1+1;y++){ctx.moveTo(x0*TILE,y*TILE);ctx.lineTo((x1+1)*TILE,y*TILE)}ctx.stroke();
+ const ents=visibleEnts(x0,y0,x1,y1);
+ for(const e of ents)if(e.k==='belt')drawEnt(ctx,e);
+ for(const e of ents)if(e.k==='belt')for(const o of e.items){const cx=(e.x+.5)*TILE+DX[e.dir]*(o.pos-.5)*TILE,cy=(e.y+.5)*TILE+DY[e.dir]*(o.pos-.5)*TILE;ctx.drawImage(icon_(o.item),cx-8,cy-8,16,16)}
+ for(const e of ents)if(e.k!=='belt'&&e.k!=='inserter')drawEnt(ctx,e);
+ for(const e of ents)if(e.k==='inserter')drawEnt(ctx,e);
+ // duch stavby / zvýraznění
+ if(!UI.anyOpen()){const tx=mouse.tx,ty=mouse.ty;
+  if(S.hand){const d=BUILD[S.hand];const ok=canPlace(S.hand,tx,ty)&&S.money>=d.cost;const f=Object.assign(mkFake(S.hand),{x:tx,y:ty,dir:S.rot,cr:false,item:S.lastRaw});
+   ctx.globalAlpha=.6;drawEnt(ctx,f,false);ctx.globalAlpha=1;ctx.strokeStyle=ok?'rgba(60,200,90,.9)':'rgba(255,70,70,.9)';ctx.lineWidth=2;ctx.strokeRect(tx*TILE+1,ty*TILE+1,d.size*TILE-2,d.size*TILE-2);
+   if(d.kind==='inserter'){const sx=tx-DX[S.rot]*d.reach,sy=ty-DY[S.rot]*d.reach,ox=tx+DX[S.rot]*d.reach,oy=ty+DY[S.rot]*d.reach;ctx.strokeStyle='rgba(200,120,30,.8)';ctx.setLineDash([3,3]);ctx.strokeRect(sx*TILE+3,sy*TILE+3,26,26);ctx.strokeRect(ox*TILE+3,oy*TILE+3,26,26);ctx.setLineDash([]);arrow(ctx,(ox+.5)*TILE,(oy+.5)*TILE,S.rot,6,'rgba(200,120,30,.9)')}
+   if(d.kind==='belt')arrow(ctx,(tx+.5)*TILE,(ty+.5)*TILE,S.rot,7,'rgba(255,255,255,.9)');
+   if(d.kind==='machine'||d.kind==='source'){const o=outTile(f);ctx.strokeStyle='rgba(200,120,30,.8)';ctx.setLineDash([3,3]);ctx.strokeRect(o[0]*TILE+3,o[1]*TILE+3,26,26);ctx.setLineDash([])}
+  }else{const e=entAtTile(tx,ty);if(e){ctx.strokeStyle='rgba(200,120,30,.95)';ctx.lineWidth=2;ctx.strokeRect(e.x*TILE+1,e.y*TILE+1,e.s*TILE-2,e.s*TILE-2);
+    if(e.k==='inserter'){const d=BUILD[e.type];const sx=e.x-DX[e.dir]*d.reach,sy=e.y-DY[e.dir]*d.reach,ox=e.x+DX[e.dir]*d.reach,oy=e.y+DY[e.dir]*d.reach;ctx.setLineDash([3,3]);ctx.strokeRect(sx*TILE+3,sy*TILE+3,26,26);ctx.strokeRect(ox*TILE+3,oy*TILE+3,26,26);ctx.setLineDash([])}
+    if(e.k==='machine'||e.k==='source'){const o=outTile(e);ctx.setLineDash([3,3]);ctx.strokeRect(o[0]*TILE+3,o[1]*TILE+3,26,26);ctx.setLineDash([])}}}
+ }
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+/* ===================== UI ===================== */
+const UI={ent:null,zak:false,dirty:true,lastHtml:{},recTab:'spicka',anyOpen(){return this.zak||this.ent!=null||!$('menu').hidden}};
+let msgT=null;function msg(t){const m=$('msg');m.textContent=t;m.style.opacity=1;clearTimeout(msgT);msgT=setTimeout(()=>m.style.opacity=0,3500)}
+function setHtml(id,h){if(UI.lastHtml[id]!==h){UI.lastHtml[id]=h;$(id).innerHTML=h}}
+function esc(t){return t.replace(/"/g,'&quot;')}
+function slot(it,n,attrs,cls,extra){return `<div class="slot ${cls||''}" ${attrs||''} ${it&&ITEMS[it]?`data-tip="${esc(tipItem(it))}"`:''}>${it?img(it)+(n!=null?`<span class="c">${n}</span>`:''):''}${extra||''}</div>`}
+function tipItem(it){let t=ITEMS[it].n;if(ITEMS[it].price)t+=`\nCena: ${Kc(rawPrice(it))}/ks`;if(ITEMS[it].sell)t+=`\nProdej: ${Kc(sellPrice(it))}`;if(RECIPES[it])t+='\n'+recipeText(it);return t}
+function tipBuild(k){const d=BUILD[k];let t=`${d.n} – ${Kc(d.cost)}\n${d.d}`;if(!unlocked(d.lock))t+=`\n🔒 odemkne zakázka ${d.lock}`;return t}
+function bar(v,cls){return `<div class="bar"><i class="${cls||''}" style="width:${clamp(v*100,0,100)}%"></i></div>`}
+function refreshHotbar(){let h='';Object.keys(BUILD).forEach((k,i)=>{const d=BUILD[k];const un=unlocked(d.lock);h+=slot(k,null,`data-hand="${k}" data-tip="${esc(tipBuild(k))}"`,(S.hand===k?'sel ':'')+(un?'':'dis'),`<span class="k">${i<10?(i+1)%10:''}</span><span class="c">${un?d.cost:'🔒'}</span>`)});setHtml('hotbar',h)}
+function refreshTop(){const z=ZAKAZKY[S.zak.done];let h=`💰 <b>${Kc(S.money)}</b><br>Zákusky/min: <b>${rate()}</b> &nbsp; Prodáno celkem: <b>${S.stats.pieces} ks</b>`;
+ if(z){const p=zakProg();h+=`<br>Zakázka: <b>${z.n}</b> – ${p}/${z.cnt} ${img(z.item)}${bar(p/z.cnt,'y')}`}else h+=`<br>🏆 Koňakový král – volná hra`;
+ if(S.loan)h+=`<br>🏦 Dluh: <b>${Kc(S.loan.debt)}</b> · splátka ${Kc(Math.min(S.loan.inst,S.loan.debt))} za ${loanLeft()} s`;
+ h+=`<br><span class="sub">T = zakázky, vylepšení a banka</span>`;setHtml('top',h)}
+const groupLock=g=>Math.min(...Object.keys(RGROUP).filter(r=>RGROUP[r]===g).map(r=>RECIPES[r].lock||0));
+function refreshRec(){let h='<h4>Výrobní postup</h4><div class="tabs">';
+ for(const g in PRODUCT){const un=unlocked(groupLock(g));h+=`<span class="tab ${UI.recTab===g?'sel':''} ${un?'':'lk'}" data-tab="${g}" title="${un?'':'odemkne zakázka '+groupLock(g)}">${PRODUCT[g]}${un?'':' 🔒'}</span>`}h+='</div>';
+ for(const id in RECIPES){if(RGROUP[id]!==UI.recTab)continue;const r=RECIPES[id],d=BUILD[REC_MACHINE[id]];const lk=unlocked(d.lock)&&unlocked(r.lock)?'':'lk';
+  h+=`<div class="r ${lk}">`+Object.keys(r.in).map(k=>`${r.in[k]}×${img(k)}`).join('<span class="a">+</span>')+`<span class="a">→</span><span class="m">${d.n}</span><span class="a">→</span>${r.n}×${img(id)}${lk?' 🔒':''}</div>`}
+ const sellable=SELL.filter(k=>RGROUP[k]===UI.recTab);h+=`<div class="r">`+sellable.map(k=>`${img(k)}${Kc(sellPrice(k))}`).join('<span class="a">/</span>')+`<span class="a">→</span><span class="m">Expedice</span></div>`;
+ setHtml('rec',h)}
+function refreshEnt(){if(UI.ent==null)return;const e=S.ents.get(UI.ent);if(!e){closeEnt();return}const d=BUILD[e.type];
+ let h=`<h2>${d.n}<span class="x" data-act="close">✕</span></h2>`;
+ if(e.k==='source'){h+=`<div class="sub">Vyber surovinu, kterou má sklad dodávat (číslo = cena za kus):</div><div class="grid" style="margin-top:6px">`;for(const r of RAW){if(!unlocked(ITEMS[r].lock))continue;h+=slot(r,Math.round(rawPrice(r)),`data-raw="${r}"`,e.item===r?'sel':'')}h+='</div>';
+  h+=`<div class="sub" style="margin-top:6px">Surovina jde na dlaždici před skladem (šipka): na pás nebo rovnou do stroje.</div>`;if(e.poor)h+='<div class="warn">Nedostatek peněz na nákup surovin!</div>'}
+ else if(e.k==='machine'){const rid=mrec(e),r=RECIPES[rid];
+  if(d.recs.length>1){h+='<h3>Recept (kliknutím přepneš – obsah stroje se vyhodí)</h3><div class="grid">';for(const q of d.recs){const un=unlocked(RECIPES[q].lock);h+=slot(q,null,un?`data-rec="${q}"`:`data-tip="${esc(ITEMS[q].n+'\n🔒 odemkne zakázka '+RECIPES[q].lock)}"`,(rid===q?'sel ':'')+(un?'':'dis'))}h+='</div>'}
+  h+='<h3>Vstupy</h3><div class="row">';for(const k in r.in)h+=slot(k,`${e.inp[k]||0}/${r.in[k]}`,'',(e.inp[k]||0)>=r.in[k]?'ok':'');h+=`</div><div class="row">${bar(e.cr?e.prog:0)}<span class="sub">${r.time} s${hasUp('rychle-stroje')?' ÷ 1,5':''}</span></div><h3>Výstup</h3><div class="row">${slot(rid,e.out,'',e.out>0?'ok':'')}<span class="sub">${r.n}× za cyklus · posílá dopředu (šipka) nebo odebírá ruka</span></div>`;
+  h+=`<div class="row"><button data-act="clear">Vyprázdnit stroj</button></div>`}
+ else if(e.k==='chest'){h+='<div class="grid">';let n=0;for(const k in e.inv){h+=slot(k,e.inv[k]);n++}for(;n<12;n++)h+='<div class="slot dis"></div>';h+=`</div><div class="row"><button data-act="clear">Vyprázdnit</button></div>`}
+ else if(e.k==='sink'){h+=`<div>Prodáno zde: <b>${e.sold} ks</b></div><div>Tržby zde: <b>${Kc(e.earned)}</b></div><div class="sub" style="margin-top:6px">Přijímá: ${SELL.map(k=>`${img(k)} ${ITEMS[k].n} ${Kc(sellPrice(k))}`).join('<br>')}</div>`}
+ else if(e.k==='inserter')h+=`<div class="sub">${d.d}<br>R = otočit.</div>`;
+ else h+=`<div class="sub">${d.d}</div>`;
+ h+=`<div class="row" style="margin-top:10px"><button data-act="remove">Odstranit (vrátí ${Kc(d.cost)})</button></div>`;
+ setHtml('entpanel',h)}
+function refreshZak(){if(!UI.zak)return;let h=`<h2>Zakázky a vylepšení<span class="x" data-act="close">✕</span></h2>`;
+ ZAKAZKY.forEach((z,i)=>{const st=i<S.zak.done?'done':i===S.zak.done?'cur':'lock';const p=i===S.zak.done?zakProg():i<S.zak.done?z.cnt:0;
+  h+=`<div class="card ${st}"><div class="ic">${img(z.item)}</div><div class="t"><b>${i+1}. ${z.n}</b> – ${z.cnt}× ${ITEMS[z.item].n}<small>${z.d}</small><small>Odměna ${Kc(z.reward)} · odemkne: ${z.unlock}</small>${st==='cur'?`<div class="row">${bar(p/z.cnt,'y')}<small>${p}/${z.cnt}</small></div>`:''}</div><div style="font-size:18px">${st==='done'?'✓':st==='cur'?'▶':'🔒'}</div></div>`});
+ if(S.won)h+='<div class="card done"><div class="t"><b>🏆 Koňakový král</b><small>Všechny zakázky splněny. Hra pokračuje volně – zkus co nejvyšší výrobu za minutu.</small></div></div>';
+ h+='<h3>🏦 Banka</h3>';
+ if(S.loan){const l=S.loan,due=Math.min(l.inst,l.debt);h+=`<div class="card cur"><div class="ic" style="font-size:26px">🏦</div><div class="t"><b>${l.n}</b> – zbývá splatit <b>${Kc(l.debt)}</b><small>Splátka ${Kc(due)} se strhne automaticky za ${loanLeft()} s (každou minutu). Když na ni nemáš, k dluhu se přičte penále 10 % z chybějící části${l.late?` · zpožděných splátek: ${l.late}`:''}.</small><div class="row" style="margin-top:6px"><button data-repay="1000" ${S.money<1?'disabled':''}>Splatit 1 000 Kč</button><button data-repay="5000" ${S.money<1?'disabled':''}>Splatit 5 000 Kč</button><button class="p" data-repay="all" ${S.money<l.debt?'disabled':''}>Splatit vše (${Kc(l.debt)})</button></div></div></div>`}
+ else{h+='<div class="sub">Půjčka ti hned přidá peníze. Splácí se automaticky ve 20 splátkách, každou minutu, nebo ji můžeš splatit dřív. Najednou můžeš mít jen jednu půjčku.</div>';
+  LOANS.forEach((L,i)=>{const un=unlocked(L.lock),debt=Math.round(L.amt*(1+L.rate));h+=`<div class="card ${un?'':'lock'}"><div class="ic" style="font-size:26px">💵</div><div class="t"><b>${L.n}</b> – ${Kc(L.amt)}<small>Úrok ${Math.round(L.rate*100)} % → splatíš ${Kc(debt)} (${Kc(Math.ceil(debt/LOAN_PARTS))}/min po dobu 20 min)</small></div>${un?`<button class="p" data-loan="${i}">Půjčit si</button>`:`<small>po zakázce ${L.lock}</small>`}</div>`})}
+ h+='<h3>Vylepšení</h3>';for(const id in UPG){const u=UPG[id];const have=hasUp(id);h+=`<div class="card ${have?'done':unlocked(u.lock)?'':'lock'}"><div class="t"><b>${u.n}</b><small>${u.d}</small></div>${have?'✓ zakoupeno':unlocked(u.lock)?`<button class="p" data-up="${id}" ${S.money<u.cost?'disabled':''}>${Kc(u.cost)}</button>`:`<small>po zakázce ${u.lock}</small>`}</div>`}
+ h+='<h3>Výrobní postup</h3><div class="chain">';
+ for(const id in RECIPES){const r=RECIPES[id];if(!unlocked(BUILD[REC_MACHINE[id]].lock)||!unlocked(r.lock))continue;h+='<span>'+Object.keys(r.in).map(k=>`${r.in[k]}×${img(k)}`).join(' + ')+` → ${r.n}×${img(id)} ${ITEMS[id].n} <i class="sub">(${BUILD[REC_MACHINE[id]].n})</i></span>`}
+ h+=`<span>${SELL.map(k=>img(k)).join(' / ')} → Expedice = peníze</span></div>`;
+ h+=`<h3>Statistika</h3><div class="sub">Tržby ${Kc(S.stats.income)} · Výdaje ${Kc(S.stats.spent)} · Vyrobeno ${S.stats.made} ks · Vyhozeno ${S.stats.trashed} ks · Postaveno ${S.stats.built} staveb · Půjček ${S.stats.loans||0} (úroky a penále ${Kc(S.stats.interest||0)}) · Čas ${Math.floor(S.time/60)} min</div>`;
+ setHtml('zak',h)}
+function openEnt(e){UI.ent=e.id;UI.zak=false;$('zak').hidden=true;$('entpanel').hidden=false;UI.lastHtml.entpanel='';refreshEnt()}
+function closeEnt(){UI.ent=null;$('entpanel').hidden=true}
+function toggleZak(){UI.zak=!UI.zak;if(UI.zak){closeEnt();UI.lastHtml.zak='';refreshZak()}$('zak').hidden=!UI.zak}
+function closeAll(){closeEnt();UI.zak=false;$('zak').hidden=true}
+function setHand(k){S.hand=k&&unlocked(BUILD[k].lock)?k:null;refreshHotbar()}
+document.addEventListener('click',ev=>{if(!S)return;const t=ev.target.closest('[data-act],[data-hand],[data-raw],[data-up],[data-rec],[data-tab],[data-loan],[data-repay]');if(!t)return;
+ if(t.dataset.tab){if(unlocked(groupLock(t.dataset.tab))){UI.recTab=t.dataset.tab;UI.lastHtml.rec='';refreshRec()}return}
+ const act=t.dataset.act;if(act==='close'){closeAll();return}
+ if(t.dataset.hand){if(!unlocked(BUILD[t.dataset.hand].lock)){msg('Odemkne se splněním zakázky '+BUILD[t.dataset.hand].lock);return}setHand(S.hand===t.dataset.hand?null:t.dataset.hand);closeAll();return}
+ if(t.dataset.loan!=null){takeLoan(+t.dataset.loan);refreshZak();return}
+ if(t.dataset.repay){repay(t.dataset.repay==='all'?null:+t.dataset.repay);refreshZak();return}
+ if(t.dataset.up){const u=UPG[t.dataset.up];if(!hasUp(t.dataset.up)&&unlocked(u.lock)&&S.money>=u.cost){S.money-=u.cost;S.stats.spent+=u.cost;S.up[t.dataset.up]=true;msg('Zakoupeno: '+u.n);UI.lastHtml.zak='';refreshZak();UI.dirty=true}return}
+ const e=UI.ent!=null?S.ents.get(UI.ent):null;if(!e)return;
+ if(t.dataset.raw){e.item=t.dataset.raw;S.lastRaw=e.item;e.poor=false;UI.lastHtml.entpanel='';refreshEnt();return}
+ if(t.dataset.rec){if(unlocked(RECIPES[t.dataset.rec].lock)){setRecipe(e,t.dataset.rec);UI.lastHtml.entpanel='';refreshEnt()}return}
+ if(act==='clear'){if(e.inp)e.inp={};if(e.inv)e.inv={};if(e.k==='machine'){e.out=0;e.cr=false;e.prog=0}UI.lastHtml.entpanel='';refreshEnt();return}
+ if(act==='remove'){removeEnt(e);closeAll();return}});
+document.addEventListener('mouseover',ev=>{const t=ev.target.closest('[data-tip]');const tip=$('tip');if(!t){if(tip.dataset.html){delete tip.dataset.html;tip.hidden=true}return}tip.dataset.html='1';tip.textContent=t.dataset.tip;tip.hidden=false});
+document.addEventListener('mousemove',ev=>{const tip=$('tip');if(tip.hidden)return;const r=$('game').getBoundingClientRect();let x=ev.clientX-r.left+14,y=ev.clientY-r.top+14;if(x+300>cw)x=ev.clientX-r.left-300;if(y+130>ch)y-=150;tip.style.left=x+'px';tip.style.top=y+'px'});
+
+/* ===================== VSTUP ===================== */
+const keys={};const mouse={x:0,y:0,l:false,r:false,tx:0,ty:0,lastTile:-1,pan:null};
+function screenToTile(mx,my){const wx=cam.x+(mx-cw/2)/(cam.z*TILE),wy=cam.y+(my-ch/2)/(cam.z*TILE);return[Math.floor(wx),Math.floor(wy)]}
+function updateHover(){const [tx,ty]=screenToTile(mouse.x,mouse.y);mouse.tx=tx;mouse.ty=ty;
+ const tip=$('tip');if(UI.anyOpen()||tip.dataset.html){if(!tip.dataset.html)tip.hidden=true;return}
+ let t='';const e=entAtTile(tx,ty);
+ if(e&&!S.hand){const d=BUILD[e.type];t=d.n;const c=entContents(e);const ks=Object.keys(c);if(ks.length)t+='\n'+ks.map(k=>`${c[k]}× ${ITEMS[k].n}`).join(', ');
+  if(e.k==='source')t+=e.item?`\nDodává: ${ITEMS[e.item].n} (${Kc(rawPrice(e.item))}/ks)`+(e.poor?'\n⚠ nedostatek peněz':''):'\n⚠ není zvolená surovina – klikni';
+  if(e.k==='machine'){const r=RECIPES[mrec(e)];const miss=Object.keys(r.in).filter(k=>(e.inp[k]||0)<r.in[k]);if(!e.cr&&miss.length)t+='\nČeká na: '+miss.map(k=>ITEMS[k].n).join(', ');if(e.out>=OUTCAP-r.n+1)t+='\n⚠ výstup plný – nemá kam posílat'}
+  if(e.k==='sink')t+=`\nProdáno ${e.sold} ks, ${Kc(e.earned)}`;
+  t+='\nlevé tl. = otevřít, pravé tl. = odstranit'+(['belt','inserter','machine','source'].includes(e.k)?', R = otočit':'')}
+ if(t){tip.textContent=t;tip.hidden=false;let x=mouse.x+16,y=mouse.y+16;if(x+300>cw)x=mouse.x-300;if(y+110>ch)y=mouse.y-110;tip.style.left=x+'px';tip.style.top=y+'px'}else tip.hidden=true}
+function tryPlace(){if(!S.hand)return;const d=BUILD[S.hand];if(!unlocked(d.lock)){setHand(null);return}const tx=mouse.tx,ty=mouse.ty;if(!canPlace(S.hand,tx,ty))return;
+ if(S.money<d.cost){msg('Nedostatek peněz');return}S.money-=d.cost;S.stats.spent+=d.cost;const e=place(S.hand,tx,ty,S.rot);
+ if(e.k==='source'){if(S.lastRaw)e.item=S.lastRaw;else{setHand(null);openEnt(e);msg('Vyber surovinu, kterou bude sklad dodávat')}}
+ UI.dirty=true}
+function tryRemove(dragOnly){const e=entAtTile(mouse.tx,mouse.ty);if(!e)return;if(dragOnly&&!['belt','inserter','trash'].includes(e.k))return;removeEnt(e);msg('Odstraněno: '+BUILD[e.type].n+' (+'+Kc(BUILD[e.type].cost)+')')}
+function rotateAt(){const e=entAtTile(mouse.tx,mouse.ty);if(e&&['belt','inserter','machine','source'].includes(e.k)){e.dir=(e.dir+1)%4;if(e.k==='inserter'){e.st=0;e.ph=0;e.hand=null}}}
+cv.addEventListener('mousedown',ev=>{if(!S||!$('menu').hidden)return;const r=cv.getBoundingClientRect();mouse.x=ev.clientX-r.left;mouse.y=ev.clientY-r.top;updateHover();
+ if(UI.anyOpen()){closeAll();return}
+ if(ev.button===0){mouse.l=true;if(S.hand){tryPlace();mouse.lastTile=mouse.ty*W+mouse.tx}else mouse.pan={sx:ev.clientX,sy:ev.clientY,cx:cam.x,cy:cam.y,moved:false,open:true}}
+ else if(ev.button===1){ev.preventDefault();mouse.pan={sx:ev.clientX,sy:ev.clientY,cx:cam.x,cy:cam.y,moved:false,open:false}}
+ else if(ev.button===2){if(S.hand){setHand(null);return}mouse.r=true;tryRemove(false);mouse.lastTile=mouse.ty*W+mouse.tx}});
+window.addEventListener('mouseup',ev=>{if(ev.button===0){mouse.l=false;const p=mouse.pan;if(p&&p.open&&!p.moved&&S&&!UI.anyOpen()){const e=entAtTile(mouse.tx,mouse.ty);if(e)openEnt(e)}}if(ev.button!==2)mouse.pan=null;if(ev.button===2)mouse.r=false});
+cv.addEventListener('mousemove',ev=>{const r=cv.getBoundingClientRect();mouse.x=ev.clientX-r.left;mouse.y=ev.clientY-r.top;
+ if(mouse.pan){const dx=ev.clientX-mouse.pan.sx,dy=ev.clientY-mouse.pan.sy;if(Math.abs(dx)+Math.abs(dy)>4)mouse.pan.moved=true;if(mouse.pan.moved){cam.x=mouse.pan.cx-dx/(cam.z*TILE);cam.y=mouse.pan.cy-dy/(cam.z*TILE);clampCam()}}
+ updateHover();if(!S||UI.anyOpen())return;const k=mouse.ty*W+mouse.tx;
+ if(mouse.l&&S.hand&&k!==mouse.lastTile){mouse.lastTile=k;tryPlace()}
+ if(mouse.r&&k!==mouse.lastTile){mouse.lastTile=k;tryRemove(true)}});
+cv.addEventListener('contextmenu',ev=>ev.preventDefault());
+cv.addEventListener('wheel',ev=>{ev.preventDefault();const [wx,wy]=[cam.x+(mouse.x-cw/2)/(cam.z*TILE),cam.y+(mouse.y-ch/2)/(cam.z*TILE)];cam.z=clamp(cam.z*Math.pow(1.12,-ev.deltaY/100),.35,3);cam.x=wx-(mouse.x-cw/2)/(cam.z*TILE);cam.y=wy-(mouse.y-ch/2)/(cam.z*TILE);clampCam()},{passive:false});
+function clampCam(){const hw=cw/(2*cam.z*TILE),hh=ch/(2*cam.z*TILE);cam.x=hw*2>=W+2?W/2:clamp(cam.x,hw-1,W+1-hw);cam.y=hh*2>=H+2?H/2:clamp(cam.y,hh-1,H+1-hh)}
+window.addEventListener('keydown',ev=>{if(!S||!$('menu').hidden){if(ev.key==='Escape'&&S)$('menu').hidden=true;return}const k=ev.key.toLowerCase();keys[k]=true;
+ if(k==='p'){S.money+=1000;msg('+1 000 Kč (bonus)');UI.dirty=true}else if(k==='t'||k==='z'){toggleZak()}else if(k==='escape'){if(UI.anyOpen())closeAll();else if(S.hand)setHand(null);else{$('menu').hidden=false;$('bContinue').hidden=false;save()}}
+ else if(k==='f'){toggleFs()}
+ else if(k==='q'){if(S.hand)setHand(null);else{const e=entAtTile(mouse.tx,mouse.ty);if(e&&unlocked(BUILD[e.type].lock)){setHand(e.type);S.rot=e.dir;if(e.k==='source'&&e.item)S.lastRaw=e.item}}}
+ else if(k==='r'){if(S.hand)S.rot=(S.rot+1)%4;else rotateAt()}
+ else if(k==='delete'){if(!UI.anyOpen())tryRemove(false)}
+ else if(/^[0-9]$/.test(k)){const i=k==='0'?9:+k-1;const list=Object.keys(BUILD);if(list[i]){if(!unlocked(BUILD[list[i]].lock))msg('Odemkne se splněním zakázky '+BUILD[list[i]].lock);else setHand(S.hand===list[i]?null:list[i])}}
+ if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))ev.preventDefault()});
+window.addEventListener('keyup',ev=>{keys[ev.key.toLowerCase()]=false});
+window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false;mouse.pan=null});
+function toggleFs(){if(document.fullscreenElement)document.exitFullscreen();else $('game').requestFullscreen&&$('game').requestFullscreen()}
+$('fs').addEventListener('click',toggleFs);
+document.addEventListener('fullscreenchange',()=>{setTimeout(fit,100);setTimeout(fit,400)});
+if(window.ResizeObserver)new ResizeObserver(fit).observe(cv);window.addEventListener('resize',fit);
+
+/* ===================== UKLÁDÁNÍ ===================== */
+const SAVE_KEY='spicky-save';
+function save(){if(!S)return;try{const o={v:1,money:S.money,nextId:S.nextId,hand:S.hand,rot:S.rot,lastRaw:S.lastRaw,time:S.time,zak:S.zak,up:S.up,sales:S.sales,won:S.won,loan:S.loan,stats:S.stats,cam:{x:cam.x,y:cam.y,z:cam.z},ents:[...S.ents.values()]};localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch(e){console.warn('save',e)}}
+function load(){try{const s=localStorage.getItem(SAVE_KEY);if(!s)return false;const o=JSON.parse(s);newGame();
+ Object.assign(S,{money:o.money,nextId:o.nextId,hand:o.hand,rot:o.rot||1,lastRaw:o.lastRaw,time:o.time,zak:o.zak,up:o.up||{},sales:o.sales||[],won:!!o.won,loan:o.loan||null,stats:Object.assign(S.stats,o.stats)});
+ for(const e of o.ents){if(!BUILD[e.type])continue;S.ents.set(e.id,e);for(const k of entTiles(e))S.entAt[k]=e.id}
+ if(o.cam){cam.x=o.cam.x;cam.y=o.cam.y;cam.z=o.cam.z}return true}catch(e){console.warn('load',e);return false}}
+window.addEventListener('beforeunload',save);
+
+/* ===================== HLAVNÍ SMYČKA ===================== */
+let last=0,acc=0,uiT=0,saveT=0;
+function frame(ts){requestAnimationFrame(frame);if(!S)return;const dtReal=Math.min(.1,(ts-last)/1000||0);last=ts;
+ if($('menu').hidden){acc+=dtReal;const step=1/60;let n=0;while(acc>=step&&n<6){update(step);acc-=step;n++}if(n===6)acc=0;
+  if(!UI.anyOpen()){let vx=0,vy=0;if(keys.w||keys.arrowup)vy-=1;if(keys.s||keys.arrowdown)vy+=1;if(keys.a||keys.arrowleft)vx-=1;if(keys.d||keys.arrowright)vx+=1;if(vx||vy){cam.x+=vx*14/cam.z*dtReal;cam.y+=vy*14/cam.z*dtReal;clampCam()}}}
+ uiT+=dtReal;if(uiT>.2||UI.dirty){uiT=0;UI.dirty=false;refreshTop();refreshRec();refreshHotbar();refreshEnt();refreshZak();if(!$('tip').hidden)updateHover()}
+ saveT+=dtReal;if(saveT>60){saveT=0;save()}
+ render()}
+function startGame(fresh){if(fresh){newGame();cam.x=W/2;cam.y=H/2;cam.z=Math.max(.35,Math.min(cw/((W+2)*TILE),ch/((H+2)*TILE)))}$('menu').hidden=true;closeAll();refreshHotbar();UI.dirty=true;if(fresh)msg('Postav sklady surovin (mouka, cukr, vejce) → hnětač → pec … a expedici. T = zakázky')}
+$('bNew').addEventListener('click',()=>{if(S&&!confirm('Začít novou hru? Současná uložená hra bude přepsána.'))return;startGame(true)});
+$('bContinue').addEventListener('click',()=>startGame(false));
+function init(){fit();if(load()){$('bContinue').hidden=false}requestAnimationFrame(frame)}
+if(typeof window.__TEST__==='undefined'){init()}
+window.G={get S(){return S},setRecipe,takeLoan,repay,LOANS,PRODUCT,RGROUP,SELL,refreshRec,refreshTop,refreshHotbar,refreshZak,refreshEnt,openEnt,toggleZak,closeAll,UI,newGame,update,place,mkEnt,entAtTile,RECIPES,BUILD,ITEMS,ZAKAZKY,UPG,save,load,render,fit,startGame,accepts,give,removeEnt,zakProg,rate,setHand,tryPlace,mouse,cam};
+</script>
+</body>
+</html>
